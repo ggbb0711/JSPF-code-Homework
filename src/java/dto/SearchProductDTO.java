@@ -18,13 +18,15 @@ public class SearchProductDTO implements DtoBase {
 
     private String categoryId;
     private String productName;
+    private String productPrice;
 
     public SearchProductDTO() {
     }
 
-    public SearchProductDTO(String categoryId, String productName) {
+    public SearchProductDTO(String categoryId, String productName, String productPrice) {
         this.categoryId = categoryId;
         this.productName = productName;
+        this.productPrice = productPrice;
     }
 
     public String getCategoryId() {
@@ -54,6 +56,18 @@ public class SearchProductDTO implements DtoBase {
                 }
             } catch (NumberFormatException e) {
                 errors.add(new ValidationError("categoryId", "Category ID must be a valid number."));
+            }
+        }
+        
+        if(productPrice!=null && !productPrice.trim().isEmpty()){
+            try{
+                Float productPriceValue = Float.parseFloat(productPrice);
+                if(productPriceValue<=0){
+                    errors.add(new ValidationError("productPrice","Product price must be a positive float number."));
+                }
+            }
+            catch(NumberFormatException e){
+                errors.add(new ValidationError("productPrice","Product price must be a float number."));
             }
         }
 

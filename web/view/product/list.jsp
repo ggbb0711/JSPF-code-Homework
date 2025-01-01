@@ -21,10 +21,10 @@
 
         <!--SEARCH FORM-->
         <form action="Product" method="GET">
-            <label>Product Name:</label>
+            <label for="productName">Product Name:</label>
             <input type="text" name="productName" value="${requestScope.productName}">
 
-            <label>Category:</label>
+            <label for="category">Category:</label>
             <select name="category" id="category">
                 <%
                     List<Category> categories = (List<Category>) request.getAttribute("categories");
@@ -39,6 +39,8 @@
                 <option value="<%=""%>"><%= "All categories"%></option>
 
             </select>
+            <label for="productPrice">Price</label>
+            <input type="number" name="productPrice" value="${requestScope.productPrice}" step="0.01">
             <input type="submit" value="search">
         </form>
 
@@ -74,6 +76,15 @@
                 <td><%= p.getProductYear()%></td>
                 <td><img src="<%= p.getImage()%>" alt="product image" width="100" height="100"></td>
                 <td><%= p.getCategory().getName()%></td>
+                <td>
+                    <a href="/MVCDemo/Product?action=prepare-update&Id=<%=p.getId()%>">Update</a>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <form action='Product' action="DELETE" style="display:inline-block">
+                        <input type='hidden' name='action' value='delete'>
+                        <input type='hidden' name='Id' value="<%=p.getId()%>">
+                        <button type="submit">Delete</button>
+                    </form>
+                </td>
             </tr>
             <%
                 }

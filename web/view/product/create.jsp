@@ -18,7 +18,6 @@
         <%
             String error = (String) request.getAttribute("msg");
         %>
-        <h1>Login Page</h1> 
         <%
             if (error != null) {
         %>
@@ -43,6 +42,7 @@
             <select id="category" name="category" required>
                 <%
                     List<Category> categories = (List<Category>) request.getAttribute("categories");
+                    System.out.println(categories);
                     if (categories != null) {
                         for (Category category : categories) {
                 %>

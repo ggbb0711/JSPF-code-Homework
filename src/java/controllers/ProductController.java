@@ -9,12 +9,14 @@ import dao.CategoryDAO;
 import dao.ProductDAO;
 import dto.CreateProductDTO;
 import dto.SearchProductDTO;
+import dto.UpdateProductDTO;
 import entities.Category;
 import entities.Product;
 import exceptions.InvalidDataException;
 import exceptions.ValidationException;
 import java.io.IOException;
 import java.util.List;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -28,8 +30,10 @@ public class ProductController extends HttpServlet {
 
     private final String LIST = "Product";
     private final String PREPARE_CREATE = "Product?action=prepare-add";
+    private final String PREPARE_UPDATE = "Product?action=prepare-update";
     private final String LIST_VIEW = "view/product/list.jsp";
     private final String CREATE_VIEW = "view/product/create.jsp";
+    private final String UPDATE_VIEW = "view/product/update.jsp";
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -39,6 +43,7 @@ public class ProductController extends HttpServlet {
         CategoryDAO categoryDAO = new CategoryDAO();
 
         String action = request.getParameter("action");
+        System.out.println(action);
         if (action == null) {
             list(request, response, categoryDAO, productDAO);
         } else {
@@ -48,6 +53,15 @@ public class ProductController extends HttpServlet {
                     break;
                 case "add":
                     add(request, response, categoryDAO, productDAO);
+                    break;
+                case "prepare-update":
+                    prepareUpdate(request,response,categoryDAO,productDAO);
+                    break;
+                case "update":
+                    update(request,response,categoryDAO,productDAO);
+                    break;
+                case "delete":
+                    delete(request,response,productDAO);
                     break;
                 default:
                     list(request, response, categoryDAO, productDAO);
@@ -74,25 +88,28 @@ public class ProductController extends HttpServlet {
 
     private void list(HttpServletRequest request, HttpServletResponse response, CategoryDAO categoryDAO, ProductDAO productDAO)
             throws ServletException, IOException {
+        // get search criterias
+        String categoryIdRaw = request.getParameter("category");
+        String productName = request.getParameter("productName");
+        String productPriceRaw = request.getParameter("productPrice");
         try {
             // get category list for drop down
             List<Category> categories = categoryDAO.list();
             request.setAttribute("categories", categories);
 
-            // get search criterias
-            String categoryIdRaw = request.getParameter("category");
-            String productName = request.getParameter("productName");
+
 
             // validate search fields only when search criterias a string
             Integer categoryId = null;
-            if (categoryIdRaw != null && !categoryIdRaw.isEmpty()) {
-                SearchProductDTO searchDTO = new SearchProductDTO(categoryIdRaw, productName);
+            Float productPrice = null;
+            if ((categoryIdRaw != null && !categoryIdRaw.isEmpty()) || (productPriceRaw!=null&&!productPriceRaw.isEmpty())) {
+                SearchProductDTO searchDTO = new SearchProductDTO(categoryIdRaw, productName,productPriceRaw);
                 searchDTO.validate();
-                categoryId = Integer.parseInt(categoryIdRaw);
+                if(categoryIdRaw!=null && !categoryIdRaw.isEmpty())categoryId = Integer.parseInt(categoryIdRaw);
+                if(productPriceRaw!=null&&!productPriceRaw.isEmpty())productPrice = Float.parseFloat(productPriceRaw);
             }
-
             // get search data
-            List<Product> list = productDAO.list(productName, categoryId);
+            List<Product> list = productDAO.list(productName, categoryId,productPrice);
             if (list != null && !list.isEmpty()) {
                 request.setAttribute("products", list);
             } else {
@@ -102,11 +119,8 @@ public class ProductController extends HttpServlet {
             // hold search criteria on search bar for next request
             request.setAttribute("productName", productName);
             request.setAttribute("category", categoryIdRaw);
-
+            request.setAttribute("productPrice",productPriceRaw);
         }
-//      catch (ValidationException ex) {
-//            request.setAttribute("validationErrors", ex.getErrors());
-//      } 
         catch (ValidationException | InvalidDataException ex) {
             request.setAttribute("msg", ex.getMessage());
         } finally {
@@ -145,13 +159,61 @@ public class ProductController extends HttpServlet {
                 response.sendRedirect(LIST);
             }
         }
-//      catch (ValidationException ex) {
-//          request.setAttribute("validationErrors", ex.getErrors());
-//      } 
+
         catch (ValidationException | InvalidDataException ex) {
             request.setAttribute("msg", ex.getMessage());
             request.getRequestDispatcher(PREPARE_CREATE).forward(request, response);
         }
+    }
+    
+    private void prepareUpdate(HttpServletRequest request, HttpServletResponse response, CategoryDAO categoryDAO, ProductDAO productDAO) throws ServletException, IOException {
+        List<Category> categories = categoryDAO.list();
+        request.setAttribute("categories", categories);
+        int id = Integer.parseInt(request.getParameter("Id"));
+        System.out.println(id);
+        Product oldProduct = productDAO.getById(id);
+        request.setAttribute("oldProduct", oldProduct);
+        RequestDispatcher dispatcher = request.getRequestDispatcher(UPDATE_VIEW);
+        dispatcher.forward(request, response);
+    }
+    
+    private void update(HttpServletRequest request, HttpServletResponse response, CategoryDAO categoryDAO, ProductDAO productDAO) throws ServletException, IOException{
+        String id = request.getParameter("Id");
+        String name = request.getParameter("name");
+        String price = request.getParameter("price");
+        String productYear = request.getParameter("productYear");
+        String image = request.getParameter("image");
+        String categoryId = request.getParameter("category");
+        
+        UpdateProductDTO productDTO = new UpdateProductDTO(id,name, price, productYear, image, categoryId);
+        try {
+            productDTO.validate();
 
+            Category category = categoryDAO.getById(Integer.parseInt(categoryId));
+            if (category == null) {
+                throw new InvalidDataException("Category not found!");
+            }
+
+            // call DAO
+            Product product = new Product(Integer.parseInt(id),name, Float.parseFloat(price), Integer.parseInt(productYear), image, category);
+            boolean isOk = productDAO.update(product);
+            if (!isOk) {
+                throw new InvalidDataException("Cannot update product!");
+            } else {
+                response.sendRedirect(LIST);
+            }
+        }
+
+        catch (ValidationException | InvalidDataException ex) {
+            request.setAttribute("msg", ex.getMessage());
+            request.getRequestDispatcher(PREPARE_UPDATE+"&Id="+id).forward(request, response);
+        }
+    }
+    
+    private void delete(HttpServletRequest request, HttpServletResponse response, ProductDAO productDAO) throws ServletException, IOException{
+        int deletedId = Integer.parseInt(request.getParameter("Id"));
+        System.out.println(deletedId);
+        System.out.println(productDAO.delete(deletedId));
+        response.sendRedirect(LIST);
     }
 }

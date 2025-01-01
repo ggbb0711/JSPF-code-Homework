@@ -15,14 +15,14 @@ import java.sql.SQLException;
  */
 public class DBUtils {
     private static final String DB_NAME = "MvcDemo";
-    private static final String DB_USER_NAME = "SA";
-    private static final String DB_PASSWORD = "sa123456"; // cac ban nen de la 12345 vi de PE de vay
+    private static final String DB_USER_NAME = "MSINGHIA";
+    private static final String DB_PASSWORD = "12345"; // cac ban nen de la 12345 vi de PE de vay
 
     public static Connection getConnection() throws ClassNotFoundException, SQLException {
         Connection conn = null;
         Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        String url = "jdbc:sqlserver://localhost:1433;databaseName=" + DB_NAME;
-        conn = DriverManager.getConnection(url, DB_USER_NAME, DB_PASSWORD);
+        String url = "jdbc:sqlserver://localhost:1433;databaseName=" + DB_NAME + ";integratedSecurity=true;encrypt=true;trustServerCertificate=true;";
+        conn = DriverManager.getConnection(url);
         return conn;
     }
 }
